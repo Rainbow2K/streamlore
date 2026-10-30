@@ -21,7 +21,7 @@ ws.addEventListener('message',async e=>{if(mine!==epoch)return;try{const d=JSON.
  if(!/^!(moment|claim|next)(\s|$)/i.test(t))return;
  emit('chat',{login:ev.chatter_user_name,text:t.slice(0,120)});
  if(t.toLowerCase()==='!next'&&uid===user.id)state=advance(state);
- else if(/^!claim\s+0?[1-6]$/i.test(t)){const n=Number(t.split(/\s+/)[1])-1;state=reclaim(state,uid,moments[n].id);}
+ else if(/^!claim\s+[a-z-]+$/i.test(t)){const id=t.split(/\s+/)[1].toLowerCase();if(moments.some(m=>m.id===id))state=reclaim(state,uid,id);}
  else state=act(state,{user:uid,command:t.toLowerCase()});await persist();}
  }catch(err){emit('bridge',{message:err.message});if(!connected){stop();}}});
 ws.addEventListener('close',()=>{clearTimeout(watchdog);sockets.delete(ws);if(mine===epoch&&!handled&&token){connected=false;emit('bridge',{message:'Chat disconnected. Reconnecting; events during downtime are not replayed.'});retry=setTimeout(()=>openSocket(),3000);}});ws.addEventListener('error',()=>{emit('bridge',{message:'Twitch WebSocket connection error.'});});alive();}

@@ -14,7 +14,10 @@
 4. Two other consenting accounts send !moment: chapter unlocks.
 5. All send !claim: one entry per user ID, no duplicates.
 6. Non-broadcaster !next: does not advance. Broadcaster !next: advances.
-7. !claim 01: prior unlocked chapter remains claimable.
+7. !claim first-light: prior unlocked chapter remains claimable.
 8. Restart: ledger survives, token does not; reconnect authorization required.
 9. Disconnect: events stop, token revocation attempted.
 10. Record real behavior plus Codex usage before entering contest.
+
+## Copy and visual review
+Removed decorative section/chapter/season numbers and the requested footer/status labels. Functional goal and collection counts remain. Past-card commands now use readable IDs such as !claim first-light. NOVA is an original adult anthropomorphic cat character in a dress and headphones. Copy explains the simulator next to its primary interaction; full limitations remain in How it works.

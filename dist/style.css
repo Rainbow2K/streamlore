@@ -3,3 +3,7 @@
 
 /* Readability pass: keep supporting copy legible on real screens. */
 .topline,.eyebrow,.mission-label{font-size:11px}.mission .instruction{font-size:12px}.progress-label{font-size:11px}.progress-label span:last-child{font-size:10px}.mission-foot{font-size:10px}.mission-foot button{font-size:11px}.card-caption{font-size:10px}.card-head,.card-sub{font-size:9px}.stream-head{font-size:11px}.right,.stage-bottom{font-size:9px}.section-head p{font-size:12px}footer{font-size:11px}.mini-card .card-head,.mini-card .card-sub{font-size:5px}@media(max-width:700px){.topline{font-size:9px}.stage-bottom{font-size:7px}.card-head,.card-sub{font-size:9px}.stream-head{font-size:9px}.section-head p{font-size:11px}.progress-label{font-size:11px}}
+
+.furry-nova{height:117%;width:65%;bottom:-12%;right:0}.furry-nova + .onair{top:30%}@media(max-width:1000px){.furry-nova{width:90%;right:-16%;height:111%;bottom:-8%}}@media(max-width:700px){.furry-nova{width:70%;right:-2%;height:115%;bottom:-10%}.furry-nova + .onair{top:26%}}
+
+.furry-nova{height:106%;bottom:-6%}@media(max-width:1000px){.furry-nova{height:104%;bottom:-4%}}@media(max-width:700px){.furry-nova{height:108%;bottom:-6%}}

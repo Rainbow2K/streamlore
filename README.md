@@ -26,7 +26,7 @@ Without configuration this serves demo mode. To connect:
    - macOS/Linux: `TWITCH_CLIENT_ID=YOUR_PUBLIC_CLIENT_ID npm start`
    - Windows PowerShell: `$env:TWITCH_CLIENT_ID="YOUR_PUBLIC_CLIENT_ID"; npm start`
 4. Open localhost, click Connect Twitch then Continue with Twitch. Authorize **user:read:chat**. No client secret required; no token in chat, logs, files or localStorage. Token only resides in bridge memory.
-5. On that account’s channel, three distinct accounts send `!moment`. Repeated messages from one user do not advance the threshold. After unlock send `!claim`; broadcaster sends `!next`. For old unlocked cards use `!claim 01` through `!claim 06`.
+5. On that account’s channel, three distinct accounts send `!moment`. Repeated messages from one user do not advance the threshold. After unlock send `!claim`; broadcaster sends `!next`. For old unlocked cards use `!claim first-light` or a card ID such as `!claim home-again`.
 6. Add http://localhost:8787/overlay.html as an OBS Browser Source, 1920×1080. Transmit your original art or authorized content; record the actual chat-to-overlay interaction.
 7. Disconnect at the end; this attempts token revocation. Tokens also clear on server restart. Reauthorize after token expiration; there is no refresh-token flow in this public-client prototype.
 

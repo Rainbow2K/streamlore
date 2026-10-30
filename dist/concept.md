@@ -8,7 +8,7 @@ StreamLore tworzy osobisty album historii kanału. Przedmiotem kolekcji jest wyd
 1. Twórca zapowiada następny rozdział na naturalną przerwę w programie, np. po rundzie. Bez wymuszania wielu godzin oglądania.
 2. Trzy różne osoby piszą !moment. Próg trzech służy demonstracji; w produkcie byłby konfigurowalny i jawny.
 3. Społeczność odblokowuje tę samą kartę. Nie ma losowania ani lepszych szans za płatność.
-4. Każdy może odebrać kopię przez !claim. !claim 01 pozwala wrócić do poprzedniego odblokowanego rozdziału.
+4. Każdy może odebrać kopię przez !claim. !claim first-light pozwala wrócić do poprzedniego odblokowanego rozdziału.
 5. Streamer otwiera następny rozdział komendą !next. Tylko jego Twitch ID może to zrobić.
 6. Album pokazuje pozostałe rozdziały i zachęca do powrotu po dalszą część opowieści. Nie kasujemy serii ani zdobytych kart za nieobecność.
 

@@ -12,7 +12,7 @@ Live communities create moments that disappear into a stream’s timeline. We wa
 
 ## What it does — current, honest draft
 StreamLore turns a six-chapter channel story into a collection of animated digital cards. Distinct chat participants help unlock a chapter, then claim a non-transferable card associated with their Twitch user ID. Rarity is a narrative label, not a price or randomized chance. Earlier unlocked chapters remain available, so viewers can return without losing progress.
-The current hosted demo simulates chat events and stores a demo album locally. The repository also contains a local Twitch OAuth and EventSub WebSocket bridge with a broadcaster-controlled chapter command and an OBS overlay. This bridge has not yet been tested with a live Twitch account. NOVA is an original fictional character; the cards are animated SVG illustrations, not actual stream clips.
+The current hosted demo simulates chat events and stores a demo album locally. The repository also contains a local Twitch OAuth and EventSub WebSocket bridge with a broadcaster-controlled chapter command and an OBS overlay. This bridge has not yet been tested with a live Twitch account. NOVA is an original adult anthropomorphic cat character; the cards are animated SVG illustrations, not actual stream clips.
 
 ## How we built it
 Built with OpenAI Codex using HTML, CSS, JavaScript modules and Node.js built-ins. Codex helped develop the visual system, original SVG artwork, state model, local Twitch adapter, tests and documentation. The same deterministic state model powers demo interactions and the local chat adapter. Browser tests checked the demo unlock, reveal and collection flow. Live Twitch validation is still pending.
@@ -43,7 +43,7 @@ OpenAI Codex; JavaScript; HTML; CSS; SVG; Node.js; implemented Twitch OAuth + Ev
 0:00–0:20: Explain the problem and the one-line promise. Show NOVA and declare it fictional original art.
 0:20–0:45: Show real Twitch channel, local bridge connected and OBS overlay.
 0:45–1:15: Three distinct chat participants send !moment. Show the actual overlay responding, not the simulator.
-1:15–1:40: !claim, inspect the saved entry; demonstrate one account cannot claim twice. Broadcaster !next; !claim 01 demonstrates recovery.
+1:15–1:40: !claim, inspect the saved entry; demonstrate one account cannot claim twice. Broadcaster !next; !claim first-light demonstrates recovery.
 1:40–2:05: Show the polished demo album and label it as the browser-local presentation layer. Show any production-only features as plans.
 2:05–2:25: Show this Codex thread, file changes and tests; briefly describe its contribution.
 2:25–2:35: No purchases, trading or cash value. End on the card collection.
