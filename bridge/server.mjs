@@ -1,0 +1,42 @@
+import http from 'node:http';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {resolve,extname,dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {randomBytes,timingSafeEqual} from 'node:crypto';
+import {moments,newState,act,advance,reclaim} from '../dist/model.mjs';
+const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..'),PORT=8787,ORIGIN=`http://localhost:${PORT}`,CLIENT=process.env.TWITCH_CLIENT_ID||'';
+const peers=new Set(),seen=new Set(),sockets=new Set();let state=newState(),token=null,user=null,connected=false,authState=null,authTime=0,epoch=0,retry=null,validation=null;
+await mkdir(resolve(ROOT,'.data'),{recursive:true});try{const x=JSON.parse(await readFile(resolve(ROOT,'.data/state.json'),'utf8'));if(Array.isArray(x.unlocked)&&x.claims&&x.chapter>=0&&x.chapter<6)state=x;}catch{}
+function emit(type,data){for(const p of peers)p.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);}
+async function persist(){await writeFile(resolve(ROOT,'.data/state.json'),JSON.stringify(state));emit('state',{state});}
+function stop(){epoch++;connected=false;token=null;user=null;clearTimeout(retry);clearInterval(validation);for(const s of sockets)s.close();sockets.clear();}
+async function api(path,body){const r=await fetch('https://api.twitch.tv/helix/'+path,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,'Client-Id':CLIENT,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});if(!r.ok)throw Error('Twitch API '+r.status);return r.json();}
+async function validate(){const r=await fetch('https://id.twitch.tv/oauth2/validate',{headers:{Authorization:'OAuth '+token}});if(!r.ok)throw Error('Twitch authorization expired. Reconnect your account.');const x=await r.json();if(x.client_id!==CLIENT||!x.scopes?.includes('user:read:chat'))throw Error('Token does not match this app or chat permission.');return x;}
+function openSocket(url='wss://eventsub.wss.twitch.tv/ws',handover=null){const mine=epoch;const ws=new WebSocket(url);sockets.add(ws);let watchdog;let handled=false;const alive=(sec=20)=>{clearTimeout(watchdog);watchdog=setTimeout(()=>ws.close(),(sec+3)*1000);};
+ws.addEventListener('message',async e=>{if(mine!==epoch)return;try{const d=JSON.parse(e.data),type=d.metadata?.message_type;alive(d.payload?.session?.keepalive_timeout_seconds||20);
+ if(type==='session_welcome'){if(handover){handover.close();}else{await api('eventsub/subscriptions',{type:'channel.chat.message',version:'1',condition:{broadcaster_user_id:user.id,user_id:user.id},transport:{method:'websocket',session_id:d.payload.session.id}});}connected=true;emit('bridge',{message:'Twitch chat connected.'});}
+ if(type==='session_reconnect'){const next=d.payload.session.reconnect_url;const u=new URL(next);if(u.protocol!=='wss:'||u.hostname!=='eventsub.wss.twitch.tv')throw Error('Unexpected reconnect endpoint');handled=true;openSocket(next,ws);}
+ if(type==='revocation'){stop();emit('bridge',{message:'Twitch revoked authorization. Reconnect to continue.'});}
+ if(type==='notification'&&d.metadata.subscription_type==='channel.chat.message'){const id=d.metadata.message_id;if(seen.has(id))return;seen.add(id);if(seen.size>3000)seen.delete(seen.values().next().value);const ev=d.payload.event,t=ev.message.text.trim(),uid=ev.chatter_user_id; // Do not retain unrelated chat messages.
+ if(!/^!(moment|claim|next)(\s|$)/i.test(t))return;
+ emit('chat',{login:ev.chatter_user_name,text:t.slice(0,120)});
+ if(t.toLowerCase()==='!next'&&uid===user.id)state=advance(state);
+ else if(/^!claim\s+0?[1-6]$/i.test(t)){const n=Number(t.split(/\s+/)[1])-1;state=reclaim(state,uid,moments[n].id);}
+ else state=act(state,{user:uid,command:t.toLowerCase()});await persist();}
+ }catch(err){emit('bridge',{message:err.message});if(!connected){stop();}}});
+ws.addEventListener('close',()=>{clearTimeout(watchdog);sockets.delete(ws);if(mine===epoch&&!handled&&token){connected=false;emit('bridge',{message:'Chat disconnected. Reconnecting; events during downtime are not replayed.'});retry=setTimeout(()=>openSocket(),3000);}});ws.addEventListener('error',()=>{emit('bridge',{message:'Twitch WebSocket connection error.'});});alive();}
+const callback=`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Connect Twitch</title><body><p id="status">Completing Twitch authorization…</p><script>const p=new URLSearchParams(location.hash.slice(1));history.replaceState(null,'','/auth/callback');fetch('/auth/token',{method:'POST',headers:{'Content-Type':'application/json','X-StreamLore':'1'},body:JSON.stringify({token:p.get('access_token'),state:p.get('state')})}).then(async r=>{if(!r.ok)throw Error(await r.text());location.replace('/')}).catch(e=>document.getElementById('status').textContent=e.message)</script></body></html>`;
+function reply(res,status,data,type='application/json'){res.writeHead(status,{'Content-Type':type,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(type==='application/json'?JSON.stringify(data):data);}
+async function body(req){let b='';for await(const c of req){b+=c;if(b.length>12000)throw Error('Request too large');}return JSON.parse(b);}
+const server=http.createServer(async(req,res)=>{try{if(req.headers.host!==`localhost:${PORT}`&&req.headers.host!==`127.0.0.1:${PORT}`)return reply(res,403,{error:'Unexpected host'});const path=new URL(req.url,ORIGIN).pathname;
+ if(req.method==='POST'&&(req.headers.origin!==ORIGIN||req.headers['x-streamlore']!=='1'))return reply(res,403,{error:'Local same-origin requests only'});
+ if(path==='/api/status')return reply(res,200,{configured:!!CLIENT,connected,user});
+ if(path==='/api/events'){res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});peers.add(res);res.write(`event: state\ndata: ${JSON.stringify({state})}\n\n`);const beat=setInterval(()=>res.write(': heartbeat\n\n'),15000);req.on('close',()=>{clearInterval(beat);peers.delete(res);});return;}
+ if(path==='/auth/start'){if(!CLIENT)return reply(res,400,'Set TWITCH_CLIENT_ID first.','text/plain');authState=randomBytes(32).toString('hex');authTime=Date.now();const q=new URLSearchParams({client_id:CLIENT,redirect_uri:ORIGIN+'/auth/callback',response_type:'token',scope:'user:read:chat',state:authState,force_verify:'true'});res.writeHead(302,{Location:'https://id.twitch.tv/oauth2/authorize?'+q});return res.end();}
+ if(path==='/auth/callback')return reply(res,200,callback,'text/html');
+ if(path==='/auth/token'&&req.method==='POST'){const b=await body(req);if(!authState||Date.now()-authTime>600000||typeof b.state!=='string'||b.state.length!==authState.length||!timingSafeEqual(Buffer.from(b.state),Buffer.from(authState)))return reply(res,403,'Invalid or expired OAuth state.','text/plain');authState=null;if(typeof b.token!=='string'||!b.token)return reply(res,400,'Twitch authorization was declined.','text/plain');stop();token=b.token;try{const v=await validate();user={id:v.user_id,login:v.login};openSocket();validation=setInterval(async()=>{try{await validate();}catch{stop();emit('bridge',{message:'Authorization expired. Please reconnect.'});}},3600000);return reply(res,200,{ok:true});}catch(e){stop();return reply(res,400,e.message,'text/plain');}}
+ if(path==='/api/disconnect'&&req.method==='POST'){const old=token;stop();if(old)fetch('https://id.twitch.tv/oauth2/revoke',{method:'POST',body:new URLSearchParams({client_id:CLIENT,token:old})}).catch(()=>{});return reply(res,200,{ok:true});}
+ if(path==='/api/erase'&&req.method==='POST'){state=newState();await persist();return reply(res,200,{ok:true});}
+ if(req.method!=='GET')return reply(res,405,{error:'Method not allowed'});const file=resolve(ROOT,'dist','.'+(path==='/'?'/index.html':decodeURIComponent(path)));if(!file.startsWith(resolve(ROOT,'dist')+'/'))return reply(res,403,{error:'Invalid path'});const types={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.svg':'image/svg+xml','.md':'text/plain'};try{reply(res,200,await readFile(file),types[extname(file)]||'application/octet-stream');}catch{reply(res,404,'Not found','text/plain');}
+ }catch{reply(res,500,{error:'Request failed. Check configuration and reconnect.'});}});
+server.listen(PORT,'127.0.0.1',()=>console.log(`StreamLore: ${ORIGIN} — ${CLIENT?'Twitch app configured':'DEMO: set TWITCH_CLIENT_ID to connect Twitch'}`));
